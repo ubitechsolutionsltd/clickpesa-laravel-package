@@ -1,11 +1,23 @@
-# ClickPesa PHP & Laravel SDK
+<p align="center">
+  <img src="art/logo.png" alt="UBITECH SOLUTIONS LIMITED" width="450">
+</p>
 
-[![Latest Version](https://img.shields.io/packagist/v/clickpesa/clickpesa-laravel-sdk.svg?style=flat-square)](https://packagist.org/packages/clickpesa/clickpesa-laravel-sdk)
-[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg?style=flat-square)]()
-[![PHP](https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square)]()
+<h1 align="center">ClickPesa PHP & Laravel SDK</h1>
 
-A modern, robust, and extensible SDK for integrating [ClickPesa](https://docs.clickpesa.com) payment gateway and disbursement APIs into any PHP project, with **first-class Laravel integration** (Service Provider, Facade, Events, and Webhooks).
+<p align="center">
+  <strong>Developed & Maintained by <a href="https://github.com/ubitechsolutionsltd">UBITECH SOLUTIONS LIMITED</a></strong><br>
+  📞 <strong>Contact / Support:</strong> <a href="tel:+255766192332">+255 766 192 332</a>
+</p>
+
+<p align="center">
+  <a href="https://packagist.org/packages/ubitechsolutionsltd/clickpesa-laravel-package"><img src="https://img.shields.io/packagist/v/ubitechsolutionsltd/clickpesa-laravel-package.svg?style=flat-square" alt="Latest Version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square" alt="Software License"></a>
+  <img src="https://img.shields.io/badge/tests-passing-brightgreen.svg?style=flat-square" alt="Tests">
+  <img src="https://img.shields.io/badge/PHP-8.1%20%7C%208.2%20%7C%208.3-blue.svg?style=flat-square" alt="PHP">
+  <a href="documentation.pdf"><img src="https://img.shields.io/badge/PDF-Documentation-red.svg?style=flat-square" alt="PDF Documentation"></a>
+</p>
+
+A modern, robust, and extensible SDK for integrating [ClickPesa](https://docs.clickpesa.com) payment gateway and disbursement APIs into any PHP project, with **first-class Laravel integration** (Service Provider, Facade, Events, and Webhooks). Includes complete offline reference in [documentation.pdf](documentation.pdf).
 
 ---
 
@@ -43,7 +55,7 @@ A modern, robust, and extensible SDK for integrating [ClickPesa](https://docs.cl
 Install the package via Composer:
 
 ```bash
-composer require clickpesa/clickpesa-laravel-sdk
+composer require ubitechsolutionsltd/clickpesa-laravel-package
 ```
 
 ---
@@ -402,9 +414,20 @@ vendor/bin/phpunit
 
 ---
 
+## Authors & Support
+
+This SDK is developed and maintained by **UBITECH SOLUTIONS LIMITED**.
+
+- **Organization**: UBITECH SOLUTIONS LIMITED
+- **GitHub**: [github.com/ubitechsolutionsltd](https://github.com/ubitechsolutionsltd)
+- **Phone / Support**: [+255 766 192 332](tel:+255766192332)
+- **Offline PDF Manual**: [documentation.pdf](documentation.pdf)
+
+---
+
 ## Security
 
-If you discover any security issues with this package, please contact security@clickpesa.com.
+If you discover any security issues with this package, please contact security@clickpesa.com or reach out to UBITECH SOLUTIONS (+255 766 192 332).
 
 ---
 

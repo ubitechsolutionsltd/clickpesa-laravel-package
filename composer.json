@@ -1,12 +1,13 @@
 {
-    "name": "clickpesa/clickpesa-laravel-sdk",
+    "name": "ubitechsolutionsltd/clickpesa-laravel-package",
     "description": "ClickPesa PHP & Laravel SDK for seamless payment collections, disbursements, and webhook handling.",
     "type": "library",
     "license": "MIT",
     "authors": [
         {
-            "name": "ClickPesa Community",
-            "email": "support@clickpesa.com"
+            "name": "UBITECH SOLUTIONS LIMITED",
+            "homepage": "https://github.com/ubitechsolutionsltd",
+            "role": "Developer"
         }
     ],
     "require": {
