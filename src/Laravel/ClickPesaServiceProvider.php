@@ -29,6 +29,7 @@ class ClickPesaServiceProvider extends ServiceProvider
                 'base_url' => $config['base_url'] ?? Config::DEFAULT_BASE_URL,
                 'token_ttl_margin' => (int) ($config['token_ttl_margin'] ?? 300),
                 'timeout' => (int) ($config['timeout'] ?? 30),
+                'pricing' => $config['pricing'] ?? [],
             ]);
         });
 

@@ -18,6 +18,8 @@ class Config
     private string $baseUrl;
     private int $tokenTtlMargin;
     private int $timeout;
+    /** @var array<string, mixed> */
+    private array $pricing;
 
     /**
      * @param array{
@@ -27,7 +29,8 @@ class Config
      *     checksum_enabled?: bool,
      *     base_url?: string,
      *     token_ttl_margin?: int,
-     *     timeout?: int
+     *     timeout?: int,
+     *     pricing?: array<string, mixed>
      * } $options
      */
     public function __construct(array $options)
@@ -49,6 +52,7 @@ class Config
         $this->baseUrl = rtrim((string) ($options['base_url'] ?? self::DEFAULT_BASE_URL), '/');
         $this->tokenTtlMargin = (int) ($options['token_ttl_margin'] ?? self::DEFAULT_TOKEN_BUFFER_SECONDS);
         $this->timeout = (int) ($options['timeout'] ?? 30);
+        $this->pricing = (array) ($options['pricing'] ?? []);
     }
 
     public function getClientId(): string
@@ -84,5 +88,18 @@ class Config
     public function getTimeout(): int
     {
         return $this->timeout;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getPricing(): array
+    {
+        return $this->pricing;
+    }
+
+    public function getPricingOption(string $key, mixed $default = null): mixed
+    {
+        return $this->pricing[$key] ?? $default;
     }
 }

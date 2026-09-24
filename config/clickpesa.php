@@ -61,4 +61,40 @@ return [
         'prefix' => env('CLICKPESA_WEBHOOK_PREFIX', 'clickpesa/webhooks'),
         'middleware' => ['api'],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pricing & Fee Configuration (.env Configurable)
+    |--------------------------------------------------------------------------
+    |
+    | Official ClickPesa tariff rates. These can be adjusted or overridden via
+    | environment variables if ClickPesa updates their fees or if custom rates
+    | are negotiated for your merchant account.
+    |
+    */
+    'pricing' => [
+        // Card payments fee percentage (charged to customer)
+        'card_percentage' => (float) env('CLICKPESA_FEE_CARD_PERCENT', 4.85),
+
+        // BillPay percentage fees (charged to organization/merchant)
+        'billpay_mpesa_percentage' => (float) env('CLICKPESA_FEE_BILLPAY_MPESA_PERCENT', 1.0),
+        'billpay_airtel_percentage' => (float) env('CLICKPESA_FEE_BILLPAY_AIRTEL_PERCENT', 1.0),
+        'billpay_halopesa_percentage' => (float) env('CLICKPESA_FEE_BILLPAY_HALOPESA_PERCENT', 2.0),
+        'billpay_mixx_percentage' => (float) env('CLICKPESA_FEE_BILLPAY_MIXX_PERCENT', 2.5),
+        'billpay_crdb_percentage' => (float) env('CLICKPESA_FEE_BILLPAY_CRDB_PERCENT', 1.0),
+
+        // CRDB Direct Debit flat fee in TZS (charged to organization/merchant)
+        'crdb_direct_debit_fee' => (float) env('CLICKPESA_FEE_CRDB_DIRECT_DEBIT', 2000.0),
+
+        // TIPS TanQR / Lipa Namba collection fee percentage (charged to merchant)
+        'tanqr_collection_percentage' => (float) env('CLICKPESA_FEE_TANQR_COLLECTION_PERCENT', 2.0),
+
+        // Bank payout flat fees
+        'bank_eft_fee' => (float) env('CLICKPESA_FEE_BANK_EFT', 2360.0),
+        'bank_tiss_tzs_fee' => (float) env('CLICKPESA_FEE_BANK_TISS_TZS', 11800.0),
+        'bank_tiss_usd_fee' => (float) env('CLICKPESA_FEE_BANK_TISS_USD', 7.50),
+
+        // Bank EFT threshold cutoff in TZS (transfers above this use TISS)
+        'bank_eft_max_threshold' => (float) env('CLICKPESA_BANK_EFT_MAX_THRESHOLD', 20000000.0),
+    ],
 ];

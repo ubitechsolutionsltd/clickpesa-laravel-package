@@ -275,7 +275,7 @@ def create_documentation_pdf():
 <h1>2. Installation & Configuration</h1>
 
 <h3>Installing with Composer</h3>
-<pre><code>composer require clickpesa/clickpesa-laravel-sdk</code></pre>
+<pre><code>composer require ubitechsolutionsltd/clickpesa-laravel-package</code></pre>
 
 <h3>Publishing Laravel Configuration</h3>
 <pre><code>php artisan vendor:publish --tag=clickpesa-config</code></pre>
@@ -454,60 +454,233 @@ $allPayments = ClickPesa::payments()->all([
 <!-- SECTION 6: DISBURSEMENTS -->
 <div class="page-break"></div>
 
-<h1>6. Disbursements & Payouts API</h1>
+<h1>6. Disbursements & Payouts API (All Types)</h1>
 
 <div class="alert alert-warning">
-  <strong>60-Second Cooldown Warning:</strong> ClickPesa enforces a strict 60-second cooldown between payout creation requests per merchant. The SDK automatically catches this and raises a <code>RateLimitException</code> containing <code>$e->getRetryAfterSeconds()</code>.
+  <strong>60-Second Cooldown:</strong> ClickPesa enforces a strict 60-second cooldown between payout creation requests per merchant. The SDK automatically catches this and raises a <code>RateLimitException</code> containing <code>$e->getRetryAfterSeconds()</code>.
 </div>
 
 <h2>1. Mobile Money (MNO) Payouts</h2>
-<p>Disburse funds directly to Vodacom M-Pesa, Tigo-Pesa, Airtel Money, or Halopesa wallets.</p>
+<p>Disburse funds directly to Vodacom M-Pesa, Airtel Money, Mixx by Yas (Tigo), or HaloPesa wallets.</p>
 
-<pre><code>// 1. Preview Fee & Balance
+<pre><code>// 1. Preview Fee & Available Balance
 $preview = ClickPesa::mobileMoneyPayouts()->preview([
-    'amount'         => 10000,
+    'amount'         => 25000,
     'currency'       => 'TZS',
-    'orderReference' => 'PAY-001',
+    'orderReference' => 'PAY-MNO-01',
     'phoneNumber'    => '255712345678',
 ]);
+$fee = $preview['fee']; // e.g., 700 TZS
 
-// 2. Disburse Payout
+// 2. Execute Payout
 $payout = ClickPesa::mobileMoneyPayouts()->create([
-    'amount'         => 10000,
+    'amount'         => 25000,
     'currency'       => 'TZS',
-    'orderReference' => 'PAY-001',
+    'orderReference' => 'PAY-MNO-01',
     'phoneNumber'    => '255712345678',
 ]);</code></pre>
 
-<h2>2. Bank Transfers</h2>
-<p>Disburse payouts to any commercial bank account in Tanzania using Account Number and BIC.</p>
-<pre><code>$bankPayout = ClickPesa::bankPayouts()->create([
-    'amount'         => 500000,
-    'currency'       => 'TZS',
-    'orderReference' => 'BANK-PAY-101',
-    'accountNumber'  => '0150123456700',
-    'accountName'    => 'Acme Trading Ltd',
-    'bic'            => 'CORUTZTZ', // CRDB Bank BIC
+<h2>2. Bank Transfers (EFT & TISS)</h2>
+<p>Disburse payouts to any commercial bank account in Tanzania using Account Number and BIC. Transfers up to 20M TZS use EFT (fee: 2,360 TZS); transfers above 20M TZS must use TISS (fee: 11,800 TZS).</p>
+<pre><code>// 1. Preview Bank Payout
+$preview = ClickPesa::bankPayouts()->preview([
+    'amount'        => 500000,
+    'currency'      => 'TZS',
+    'orderReference'=> 'PAY-BNK-01',
+    'accountNumber' => '0150123456700',
+    'bic'           => 'CORUTZTZ', // CRDB Bank BIC
+]);
+
+// 2. Execute Bank Payout
+$bankPayout = ClickPesa::bankPayouts()->create([
+    'amount'        => 500000,
+    'currency'      => 'TZS',
+    'orderReference'=> 'PAY-BNK-01',
+    'accountNumber' => '0150123456700',
+    'accountName'   => 'Acme Trading Ltd',
+    'bic'           => 'CORUTZTZ',
+    'transferType'  => 'ACH', // 'ACH' for EFT, 'RTGS' for TISS
 ]);</code></pre>
 
-<h2>3. Lipa Namba & TanQR Payouts</h2>
-<p>Send money directly to any merchant Lipa Namba or TanQR code.</p>
+<h2>3. Merchant Lipa Namba Payouts</h2>
+<p>Send money directly to merchant Lipa Namba numbers via mobile networks.</p>
 <pre><code>// 1. Get providers (e.g. Vodacom 503, Airtel 502)
 $providers = ClickPesa::lipaNambaPayouts()->providers();
 
 // 2. Send to Lipa Namba
 $lnPayout = ClickPesa::lipaNambaPayouts()->create([
-    'amount'         => 25000,
+    'amount'         => 15000,
     'currency'       => 'TZS',
-    'orderReference' => 'LN-901',
+    'orderReference' => 'PAY-LN-01',
     'lipaNamba'      => '48001268',
     'providerCode'   => '503',
 ]);</code></pre>
 
-<!-- SECTION 7: WEBHOOKS -->
+<h2>4. TIPS TanQR Payouts (Direct to QR Code)</h2>
+<pre><code>$qrPayout = ClickPesa::lipaNambaPayouts()->create([
+    'amount'         => 30000,
+    'currency'       => 'TZS',
+    'orderReference' => 'PAY-QR-01',
+    'qrCode'         => '00020101021226...',
+]);</code></pre>
+
+<h2>5. Hosted Payout Links</h2>
+<pre><code>// Generate a link where payee selects mobile money or bank
+$link = ClickPesa::payoutLinks()->create([
+    'amount'         => 100000,
+    'currency'       => 'TZS',
+    'orderReference' => 'PAY-LINK-01',
+    'recipientName'  => 'Juma Hamisi',
+]);
+$claimUrl = $link['payoutUrl'];</code></pre>
+
+<h2>6. Querying Payout Status & Pagination</h2>
+<pre><code>// Query specific payout by Order Reference
+$payoutStatus = ClickPesa::payouts()->get('PAY-MNO-01');
+
+// Filter payout history with pagination
+$history = ClickPesa::payouts()->all([
+    'status'    => 'SUCCESS',
+    'startDate' => '2026-09-01',
+    'limit'     => 50,
+]);</code></pre>
+
+<!-- SECTION 7: PRICING & FEE CALCULATOR -->
 <div class="page-break"></div>
 
-<h1>7. Webhooks & Event Processing</h1>
+<h1>7. Pricing, Fee Bearers & Offline Fee Calculator</h1>
+
+<p>
+  ClickPesa differentiates between channels where fees are charged to the <strong>customer</strong> versus channels where fees are deducted from the <strong>merchant</strong>.
+</p>
+
+<h2>ClickPesa Tariff & Fee Bearers Matrix</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Payment Channel</th>
+      <th>Fee Structure</th>
+      <th>Fee Bearer</th>
+      <th>Transaction Limits</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>USSD Push</strong></td>
+      <td>Tiered Slab (54 – 7,960 TZS)</td>
+      <td><strong>Customer</strong></td>
+      <td>500 to 3,000,000 TZS</td>
+    </tr>
+    <tr>
+      <td><strong>Card Payments</strong></td>
+      <td>4.85%</td>
+      <td><strong>Customer</strong></td>
+      <td>Visa, Mastercard, UnionPay</td>
+    </tr>
+    <tr>
+      <td><strong>BillPay (M-Pesa & Airtel)</strong></td>
+      <td>1.0%</td>
+      <td><strong>Merchant</strong></td>
+      <td>500 to 5,000,000 TZS</td>
+    </tr>
+    <tr>
+      <td><strong>BillPay (HaloPesa)</strong></td>
+      <td>2.0%</td>
+      <td><strong>Merchant</strong></td>
+      <td>500 to 5,000,000 TZS</td>
+    </tr>
+    <tr>
+      <td><strong>BillPay (Mixx by Yas / Tigo)</strong></td>
+      <td>2.5%</td>
+      <td><strong>Merchant</strong></td>
+      <td>500 to 5,000,000 TZS</td>
+    </tr>
+    <tr>
+      <td><strong>CRDB BillPay</strong></td>
+      <td>1.0%</td>
+      <td><strong>Merchant</strong></td>
+      <td>1,000 to 100,000,000 TZS</td>
+    </tr>
+    <tr>
+      <td><strong>CRDB Direct Debit</strong></td>
+      <td>2,000 TZS Flat</td>
+      <td><strong>Merchant</strong></td>
+      <td>Up to 100,000,000 TZS</td>
+    </tr>
+    <tr>
+      <td><strong>TIPS TanQR Collection</strong></td>
+      <td>2.0%</td>
+      <td><strong>Merchant</strong></td>
+      <td>TIPS QR Merchant Code</td>
+    </tr>
+    <tr>
+      <td><strong>Mobile Money / TanQR Payouts</strong></td>
+      <td>Tiered Slab (52 – 9,890 TZS)</td>
+      <td><strong>Configurable</strong></td>
+      <td>100 to 5,000,000 TZS</td>
+    </tr>
+    <tr>
+      <td><strong>Bank EFT Payout</strong></td>
+      <td>2,360 TZS Flat</td>
+      <td><strong>Configurable</strong></td>
+      <td>Up to 20,000,000 TZS</td>
+    </tr>
+    <tr>
+      <td><strong>Bank TISS Payout (TZS)</strong></td>
+      <td>11,800 TZS Flat</td>
+      <td><strong>Configurable</strong></td>
+      <td>Up to 1,000,000,000 TZS</td>
+    </tr>
+    <tr>
+      <td><strong>Bank TISS Payout (USD)</strong></td>
+      <td>$7.50 USD Flat</td>
+      <td><strong>Configurable</strong></td>
+      <td>Up to $1,000,000 USD</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Instant Offline Fee Estimation (<code>ClickPesa::fees()</code>)</h2>
+<pre><code>// 1. Calculate USSD Push fee
+$ussdFee = ClickPesa::fees()->calculateUssdPushFee(15000); // 920.0 TZS
+
+// 2. Calculate Card Payment fee
+$cardFee = ClickPesa::fees()->calculateCardFee(50000); // 2,425.0 TZS (4.85%)
+
+// 3. Calculate BillPay fee
+$mpesaFee = ClickPesa::fees()->calculateBillPayFee('mpesa', 100000); // 1,000.0 TZS (1%)
+
+// 4. Calculate Net Merchant Settlement
+$net = ClickPesa::fees()->calculateNetSettlement('billpay_mpesa', 100000); // 99,000.0 TZS
+
+// 5. Payout Budgeting (Absorb Fee vs Deduct from Payee)
+$absorbed = ClickPesa::fees()->calculatePayoutDeduction('mobile_money', 50000, absorbFee: true);
+// Total merchant debited: 51,460 TZS; Payee receives: 50,000 TZS
+
+$deducted = ClickPesa::fees()->calculatePayoutDeduction('mobile_money', 50000, absorbFee: false);
+// Total merchant debited: 50,000 TZS; Payee receives: 48,540 TZS
+
+// 6. Pre-Flight Limits Validation
+ChannelLimits::validate('ussd_push', 15000); // Passes without network call!</code></pre>
+
+<h2>Environment Variables for Tariff Configuration</h2>
+<p>All fees are fully customizable in <code>.env</code>:</p>
+<pre><code># .env Pricing Overrides
+CLICKPESA_FEE_CARD_PERCENT=4.85
+CLICKPESA_FEE_BILLPAY_MPESA_PERCENT=1.0
+CLICKPESA_FEE_BILLPAY_HALOPESA_PERCENT=2.0
+CLICKPESA_FEE_BILLPAY_MIXX_PERCENT=2.5
+CLICKPESA_FEE_BILLPAY_CRDB_PERCENT=1.0
+CLICKPESA_FEE_CRDB_DIRECT_DEBIT=2000
+CLICKPESA_FEE_BANK_EFT=2360
+CLICKPESA_FEE_BANK_TISS_TZS=11800
+CLICKPESA_FEE_BANK_TISS_USD=7.50
+CLICKPESA_BANK_EFT_MAX_THRESHOLD=20000000</code></pre>
+
+<!-- SECTION 8: WEBHOOKS -->
+<div class="page-break"></div>
+
+<h1>8. Webhooks & Event Processing</h1>
 
 <p>
   ClickPesa sends asynchronous HTTP POST notifications when transactions complete, fail, or reverse.
@@ -587,10 +760,10 @@ class MarkOrderAsPaid
     }}
 }}</code></pre>
 
-<!-- SECTION 8: STANDALONE PHP & TESTING -->
+<!-- SECTION 9: STANDALONE PHP & TESTING -->
 <div class="page-break"></div>
 
-<h1>8. Standalone PHP & Application Testing</h1>
+<h1>9. Standalone PHP & Application Testing</h1>
 
 <h2>Using the SDK in Vanilla PHP / Non-Laravel Projects</h2>
 <pre><code>require_once __DIR__ . '/vendor/autoload.php';
@@ -644,10 +817,10 @@ class CheckoutTest extends TestCase
     }}
 }}</code></pre>
 
-<!-- SECTION 9: AUTHORS & SUPPORT -->
+<!-- SECTION 10: AUTHORS & SUPPORT -->
 <div class="page-break"></div>
 
-<h1>9. Authors, Support & Commercial Inquiries</h1>
+<h1>10. Authors, Support & Commercial Inquiries</h1>
 
 <div style="text-align: center; margin: 40px 0;">
   <img src="data:image/png;base64,{logo_base64}" alt="UBITECH SOLUTIONS LIMITED" style="max-width: 320px;">

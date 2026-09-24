@@ -18,4 +18,15 @@ class PayoutLinkResource extends AbstractResource
     {
         return $this->requestPost('/payout-link/generate-payout-url', $data);
     }
+
+    /**
+     * Alias for generate().
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public function create(array $data): array
+    {
+        return $this->generate($data);
+    }
 }

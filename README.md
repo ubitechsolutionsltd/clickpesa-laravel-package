@@ -110,16 +110,55 @@ $redirectUrl = $checkout['checkoutLink'];
 // --- 3. Query Payment Status ---
 $attempts = ClickPesa::payments()->get('ORDER-1001');
 
-// --- 4. Send Mobile Money Payout ---
-$payout = ClickPesa::mobileMoneyPayouts()->create([
-    'amount'         => 5000,
+// --- 4. Send Disbursements (All Payout Types Supported) ---
+
+// 4a. Mobile Money Payout (M-Pesa, Airtel, Mixx by Yas, HaloPesa)
+$mnoPayout = ClickPesa::mobileMoneyPayouts()->create([
+    'amount'         => 25000,
     'currency'       => 'TZS',
     'phoneNumber'    => '255755123456',
-    'orderReference' => 'PAYOUT-501',
+    'orderReference' => 'PAYOUT-MNO-01',
 ]);
 
-// --- 5. Check Balances ---
+// 4b. Bank Payout (EFT / TISS transfers with BIC)
+$bankPayout = ClickPesa::bankPayouts()->create([
+    'amount'         => 500000,
+    'currency'       => 'TZS',
+    'orderReference' => 'PAYOUT-BNK-01',
+    'accountNumber'  => '0150123456700',
+    'accountName'    => 'Acme Ltd',
+    'bic'            => 'CORUTZTZ', // CRDB Bank BIC
+]);
+
+// 4c. Merchant Lipa Namba Payout
+$lnPayout = ClickPesa::lipaNambaPayouts()->create([
+    'amount'         => 15000,
+    'currency'       => 'TZS',
+    'orderReference' => 'PAYOUT-LN-01',
+    'lipaNamba'      => '48001268',
+    'providerCode'   => '503', // M-Pesa merchant
+]);
+
+// 4d. TIPS TanQR Payout (Direct to QR code)
+$qrPayout = ClickPesa::lipaNambaPayouts()->create([
+    'amount'         => 30000,
+    'currency'       => 'TZS',
+    'orderReference' => 'PAYOUT-QR-01',
+    'qrCode'         => '00020101021226...',
+]);
+
+// 4e. Hosted Payout Link (Payee selects preferred destination)
+$payoutLink = ClickPesa::payoutLinks()->create([
+    'amount'         => 100000,
+    'currency'       => 'TZS',
+    'orderReference' => 'PAYOUT-LINK-01',
+    'recipientName'  => 'Juma Hamisi',
+]);
+$claimUrl = $payoutLink['payoutUrl'];
+
+// --- 5. Check Balances & Offline Fee Calculation ---
 $balances = ClickPesa::balance()->get();
+$fee = ClickPesa::fees()->calculateUssdPushFee(15000); // 920 TZS
 ```
 
 ---
@@ -316,41 +355,194 @@ $list = $client->payments()->all([
 
 ### 2. Disbursements (Payouts)
 
-#### Mobile Money Payout
+ClickPesa supports 5 disbursement channels. All payout endpoints are subject to a **60-second cooldown** between payout creations (`RateLimitException`).
+
+#### 2a. Mobile Money Payout (M-Pesa, Airtel, Mixx by Yas, HaloPesa)
 ```php
-$client->mobileMoneyPayouts()->create([
-    'amount' => 25000,
-    'currency' => 'TZS',
+// Step 1: Preview fee and check balance before sending
+$preview = $client->mobileMoneyPayouts()->preview([
+    'amount'         => 25000,
+    'currency'       => 'TZS',
+    'phoneNumber'    => '255755123456',
     'orderReference' => 'MNO_PAY_01',
-    'phoneNumber' => '255712345678',
+]);
+$fee = $preview['fee']; // e.g., 700 TZS
+
+// Step 2: Create mobile money payout
+$payout = $client->mobileMoneyPayouts()->create([
+    'amount'         => 25000,
+    'currency'       => 'TZS',
+    'phoneNumber'    => '255755123456',
+    'orderReference' => 'MNO_PAY_01',
 ]);
 ```
 
-#### Bank Payout
+#### 2b. Bank Payout (EFT / ACH vs TISS)
 ```php
-$client->bankPayouts()->create([
-    'amount' => 500000,
-    'currency' => 'TZS',
-    'orderReference' => 'BANK_PAY_01',
+// Step 1: Preview bank payout (verifies BIC and estimated arrival)
+$preview = $client->bankPayouts()->preview([
+    'amount'        => 500000,
+    'currency'      => 'TZS',
     'accountNumber' => '0150123456700',
-    'accountName' => 'Acme Supplies Ltd',
-    'bic' => 'CORUTZTZ', // CRDB Bank BIC
+    'bic'           => 'CORUTZTZ', // CRDB Bank BIC
+    'orderReference'=> 'BANK_PAY_01',
+]);
+
+// Step 2: Create bank payout
+// Note: Transfers <= 20M TZS use EFT (fee: 2,360 TZS). Transfers > 20M TZS must use TISS (fee: 11,800 TZS).
+$payout = $client->bankPayouts()->create([
+    'amount'        => 500000,
+    'currency'      => 'TZS',
+    'orderReference'=> 'BANK_PAY_01',
+    'accountNumber' => '0150123456700',
+    'accountName'   => 'Acme Supplies Ltd',
+    'bic'           => 'CORUTZTZ',
+    'transferType'  => 'ACH', // 'ACH' for EFT, 'RTGS' for TISS
 ]);
 ```
 
-#### Lipa Namba & TanQR
+#### 2c. Merchant Lipa Namba Payout
 ```php
-// Retrieve providers (e.g. M-Pesa 503, Airtel 502)
+// Retrieve active Lipa Namba providers (e.g., M-Pesa 503, Airtel 502)
 $providers = $client->lipaNambaPayouts()->providers();
 
-// Pay to Lipa Namba
-$client->lipaNambaPayouts()->create([
-    'amount' => 10000,
-    'currency' => 'TZS',
+// Preview and create payout to merchant Lipa Namba
+$payout = $client->lipaNambaPayouts()->create([
+    'amount'         => 15000,
+    'currency'       => 'TZS',
     'orderReference' => 'LN_PAY_01',
-    'lipaNamba' => '48001268',
-    'providerCode' => '503',
+    'lipaNamba'      => '48001268',
+    'providerCode'   => '503',
 ]);
+```
+
+#### 2d. TIPS TanQR Payout (Direct to QR)
+```php
+// Payout directly using the merchant's TIPS TanQR code
+$qrPayout = $client->lipaNambaPayouts()->create([
+    'amount'         => 30000,
+    'currency'       => 'TZS',
+    'orderReference' => 'QR_PAY_01',
+    'qrCode'         => '00020101021226...',
+]);
+```
+
+#### 2e. Hosted Payout Link
+```php
+// Generate a hosted payout link where the recipient selects their preferred wallet or bank
+$link = $client->payoutLinks()->create([
+    'amount'         => 50000,
+    'currency'       => 'TZS',
+    'orderReference' => 'LINK_PAY_01',
+    'recipientName'  => 'Baraka Mushi',
+]);
+$claimUrl = $link['payoutUrl'];
+```
+
+#### 2f. Querying Payout Status & Tracking
+```php
+// Get payout status by Order Reference
+$status = $client->payouts()->get('MNO_PAY_01');
+
+// Filter & paginate payouts history
+$history = $client->payouts()->all([
+    'status'    => 'SUCCESS',
+    'startDate' => '2026-09-01',
+    'limit'     => 50,
+]);
+```
+
+#### 2g. Handling the 60-Second Cooldown
+ClickPesa enforces a 60-second cooldown between payout creations:
+```php
+use ClickPesa\Exceptions\RateLimitException;
+
+try {
+    $payout = $client->mobileMoneyPayouts()->create([...]);
+} catch (RateLimitException $e) {
+    // Cooldown active - wait or queue the next payout job
+    logger()->warning('ClickPesa payout rate limited: ' . $e->getMessage());
+}
+```
+
+---
+
+### 3. Pricing, Fee Bearers & Offline Fee Calculator
+
+ClickPesa charges different fees depending on the channel and whether the customer or the merchant bears the cost. The SDK provides an instant, offline **`FeeCalculator`** so you can estimate and display fees in checkout screens without waiting for API roundtrips.
+
+#### Fee Bearers Overview
+
+| Channel | Fee Type | Fee Bearer | Notes |
+| :--- | :--- | :--- | :--- |
+| **USSD Push** (M-Pesa, Airtel, Mixx by Yas, HaloPesa) | Tiered slab (54 – 7,960 TZS) | **Customer** | Added to the customer's payment at checkout. |
+| **Card Payments** (Visa, Mastercard, UnionPay) | **4.85%** | **Customer** | Added to the customer's payment at checkout. |
+| **BillPay** (M-Pesa & Airtel) | **1.0%** | **Merchant** | Deducted from merchant settlement. |
+| **BillPay** (HaloPesa) | **2.0%** | **Merchant** | Deducted from merchant settlement. |
+| **BillPay** (Mixx by Yas / Tigo) | **2.5%** | **Merchant** | Deducted from merchant settlement. |
+| **BillPay** (CRDB) | **1.0%** | **Merchant** | Deducted from merchant settlement. |
+| **CRDB Direct Debit** | **2,000 TZS** flat | **Merchant** | Charged per successful scheduled debit. |
+| **TIPS TanQR Collection** | **2.0%** | **Merchant** | Deducted from merchant settlement. |
+| **Mobile Money & TanQR Payouts** | Tiered slab (52 – 9,890 TZS) | **Configurable** | Merchant can absorb fee OR deduct from payee. |
+| **Bank EFT Payout** | **2,360 TZS** flat | **Configurable** | For transfers $\le$ 20,000,000 TZS. |
+| **Bank TISS Payout (TZS)** | **11,800 TZS** flat | **Configurable** | For transfers up to 1,000,000,000 TZS. |
+| **Bank TISS Payout (USD)** | **$7.50 USD** flat | **Configurable** | For transfers up to $1,000,000 USD. |
+
+#### Offline Fee Calculation Examples
+```php
+use ClickPesa\Laravel\Facades\ClickPesa;
+use ClickPesa\Pricing\ChannelLimits;
+
+// 1. Calculate USSD Push fee
+$ussdFee = ClickPesa::fees()->calculateUssdPushFee(15000); // 920.0 TZS
+
+// 2. Calculate Card Payment fee
+$cardFee = ClickPesa::fees()->calculateCardFee(50000); // 2,425.0 TZS (4.85%)
+
+// 3. Calculate BillPay fee
+$mpesaFee = ClickPesa::fees()->calculateBillPayFee('mpesa', 100000); // 1,000.0 TZS (1%)
+$mixxFee  = ClickPesa::fees()->calculateBillPayFee('mixx', 100000);  // 2,500.0 TZS (2.5%)
+
+// 4. Calculate Net Merchant Settlement (e.g. on 100,000 TZS collection)
+$net = ClickPesa::fees()->calculateNetSettlement('billpay_mpesa', 100000); // 99,000.0 TZS
+
+// 5. Payout Budgeting (Absorb Fee vs Deduct from Recipient)
+// Option A: Business absorbs fee (payee receives full 50,000 TZS; business wallet debited 51,460 TZS)
+$budgetA = ClickPesa::fees()->calculatePayoutDeduction('mobile_money', 50000, absorbFee: true);
+
+// Option B: Deduct fee from payee (business wallet debited 50,000 TZS; payee receives 48,540 TZS)
+$budgetB = ClickPesa::fees()->calculatePayoutDeduction('mobile_money', 50000, absorbFee: false);
+
+// 6. Pre-Flight Limit Validation (Prevents 400 Bad Request)
+ChannelLimits::validate('ussd_push', 15000); // Passes
+// ChannelLimits::validate('ussd_push', 300); // Throws ValidationException: below minimum 500 TZS!
+
+// 7. Smart Bank Transfer Method Recommender
+$method = ChannelLimits::recommendBankTransferMethod(25000000); // Returns 'TISS' (> 20M TZS)
+```
+
+#### Environment Variables for Custom Pricing
+All rates can be overridden in your `.env` file if ClickPesa updates fees or if custom negotiated rates apply to your account:
+
+```env
+# Card percentage fee (default: 4.85)
+CLICKPESA_FEE_CARD_PERCENT=4.85
+
+# BillPay percentage fees
+CLICKPESA_FEE_BILLPAY_MPESA_PERCENT=1.0
+CLICKPESA_FEE_BILLPAY_AIRTEL_PERCENT=1.0
+CLICKPESA_FEE_BILLPAY_HALOPESA_PERCENT=2.0
+CLICKPESA_FEE_BILLPAY_MIXX_PERCENT=2.5
+CLICKPESA_FEE_BILLPAY_CRDB_PERCENT=1.0
+
+# Flat fees in TZS
+CLICKPESA_FEE_CRDB_DIRECT_DEBIT=2000
+CLICKPESA_FEE_BANK_EFT=2360
+CLICKPESA_FEE_BANK_TISS_TZS=11800
+CLICKPESA_FEE_BANK_TISS_USD=7.50
+
+# Bank EFT threshold (transfers above this use TISS)
+CLICKPESA_BANK_EFT_MAX_THRESHOLD=20000000
 ```
 
 ---

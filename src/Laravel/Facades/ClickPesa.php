@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ClickPesa\Resources\Account\BalanceResource balance()
  * @method static \ClickPesa\Resources\Account\BankListResource banks()
  * @method static \ClickPesa\Resources\Account\ExchangeRateResource exchangeRates()
+ * @method static \ClickPesa\Pricing\FeeCalculator fees()
  * @method static \ClickPesa\Config getConfig()
  * @method static \ClickPesa\Auth\TokenManager getTokenManager()
  * @method static \ClickPesa\Http\HttpClientInterface getHttpClient()

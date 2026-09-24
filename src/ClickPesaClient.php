@@ -9,6 +9,7 @@ use ClickPesa\Auth\TokenCacheInterface;
 use ClickPesa\Auth\TokenManager;
 use ClickPesa\Http\GuzzleHttpClient;
 use ClickPesa\Http\HttpClientInterface;
+use ClickPesa\Pricing\FeeCalculator;
 use ClickPesa\Resources\Account\BalanceResource;
 use ClickPesa\Resources\Account\BankListResource;
 use ClickPesa\Resources\Account\ExchangeRateResource;
@@ -45,6 +46,7 @@ class ClickPesaClient
     private ?BalanceResource $balance = null;
     private ?BankListResource $banks = null;
     private ?ExchangeRateResource $exchangeRates = null;
+    private ?FeeCalculator $fees = null;
 
     /**
      * @param Config|array<string, mixed> $config
@@ -150,5 +152,10 @@ class ClickPesaClient
     public function exchangeRates(): ExchangeRateResource
     {
         return $this->exchangeRates ??= new ExchangeRateResource($this->httpClient);
+    }
+
+    public function fees(): FeeCalculator
+    {
+        return $this->fees ??= new FeeCalculator($this->config);
     }
 }
