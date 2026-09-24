@@ -244,7 +244,7 @@ def create_documentation_pdf():
     <p>Professional Software Engineering & Digital Payment Integrations</p>
     <p class="phone">📞 Phone / Support: +255 766 192 332</p>
     <p>Repository: github.com/ubitechsolutionsltd/clickpesa-laravel-package</p>
-    <p style="margin-top: 10px; font-weight: 600; color: #475569;">Release Version: 1.0.0 &bull; September 2026</p>
+    <p style="margin-top: 10px; font-weight: 600; color: #475569;">Release Version: 1.0.1 &bull; September 2026</p>
   </div>
 </div>
 
