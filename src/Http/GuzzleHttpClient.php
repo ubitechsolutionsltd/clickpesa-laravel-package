@@ -33,7 +33,7 @@ class GuzzleHttpClient implements HttpClientInterface
         $this->config = $config;
         $this->tokenManager = $tokenManager;
         $this->client = $client ?? new GuzzleClient([
-            'base_uri' => $this->config->getBaseUrl(),
+            'base_uri' => $this->config->getBaseUrl() . '/', // trailing slash keeps /third-parties in relative URIs
             'timeout' => $this->config->getTimeout(),
         ]);
     }
